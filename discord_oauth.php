@@ -42,11 +42,11 @@ if (isset($_SESSION['discord_accessToken']) && $tokenExpirationTime > time()) {
     exit('Error: state parameter mismatch - access denied.');
 } else {
 	$data = [
+	    'code' => $code,
 	    'client_id' => $discord_clientId,
 	    'client_secret' => $discord_clientSecret,
-	    'grant_type' => 'authorization_code',
-	    'code' => $code,
 	    'redirect_uri' => $discord_redirectUrl,
+	    'grant_type' => 'authorization_code',
 	    'scope' => 'identify email'
 	];
 
