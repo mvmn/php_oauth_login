@@ -1,10 +1,10 @@
 <?php
 session_start();
-require_once 'env.php';
+require_once 'env.php'; // Define $discord_clientId, $discord_clientSecret, $discord_redirectUrl
 
-$code = $_GET['code'];
-$state = $_GET['state'];
-$expectedState = $_SESSION['discord_nonce'];
+$code = $_GET['code'] ?? null;
+$state = $_GET['state'] ?? null;
+$expectedState = $_SESSION['discord_nonce'] ?? null;
 
 function showUserDetails($token) {
 	$ch = curl_init('https://discord.com/api/users/@me');
@@ -21,13 +21,14 @@ function showUserDetails($token) {
 	echo '<img src="https://cdn.discordapp.com/avatars/'.$user_info['id'].'/'.$user_info['avatar'].'.png" />';
 }
 
-$tokenExpirationTime = (int)$_SESSION['discord_accessTokenExpiration'];
+$tokenExpirationTime = (int)($_SESSION['discord_accessTokenExpiration'] ?? 0);
 
 if (isset($_SESSION['discord_accessToken']) && $tokenExpirationTime > time()) {
 	error_log("Reuse token");
 	$token = $_SESSION['discord_accessToken'];
 	showUserDetails($token);
-} else if (!isset($_SESSION['discord_nonce']) || !isset($_GET['state'])) {
+
+} else if (!$expectedState || !$state) {
 	$nonce = bin2hex(random_bytes(8));
 	$_SESSION['discord_nonce'] = $nonce;
 
@@ -35,7 +36,8 @@ if (isset($_SESSION['discord_accessToken']) && $tokenExpirationTime > time()) {
 	header("Location: ".$url);
 	
 	echo '<a href="'.$url.'">Click if you&apos;re not redirected automatically</a>';
-} else if($_SESSION['discord_nonce'] !== $_GET['state']) {
+
+} else if ($expectedState !== $state) {
     http_response_code(403);
     exit('Error: state parameter mismatch - access denied.');
 } else {
@@ -63,19 +65,12 @@ if (isset($_SESSION['discord_accessToken']) && $tokenExpirationTime > time()) {
 	}
 
 	$authResponse = json_decode($response, true);
-
-	/*
-	token_type: Bearer
-	access_token: token here
-	expires_in: 604800
-	refresh_token: token here
-	scope: identify email
-	*/
-	
 	$token = $authResponse['access_token'];
+
 	$_SESSION['discord_accessToken'] = $token;
 	$_SESSION['discord_accessTokenExpiration'] = time() + $authResponse['expires_in'] - 10;
 	$_SESSION['discord_refreshToken'] = $authResponse['refresh_token'];
+
 	showUserDetails($token);
 }
 ?>

@@ -18,7 +18,6 @@ function showUserDetails($token) {
     foreach ($user_info as $key => $value) {
         echo "$key: $value<br>";
     }
-
     echo '<img src="' . $user_info['picture'] . '" />';
 }
 
